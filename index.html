@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pixel Filter</title>
+
+    <link data-trunk rel="css" href="src/index.css" />
+    <base data-trunk-public-url />
+  </head>
+  <body>
+    <link
+      data-trunk
+      rel="rust"
+      href="Cargo.toml"
+      data-wasm-opt="z"
+      data-bin="pixel-filter"
+    />
+    <script>
+      var loadFile = function (event) {
+        var image = document.getElementById("img");
+        image.src = URL.createObjectURL(event.target.files[0]);
+      };
+      var randomImage = function (event) {
+        var image = document.getElementById("img");
+        var tags = [
+          "burger",
+          "car",
+          "fish",
+          "fruit",
+          "horse",
+          "house",
+          "people",
+          "steak",
+          "tree",
+          "wine",
+        ];
+        var seed = Math.floor(Math.random() * 10);
+        image.src =
+          "https://source.unsplash.com/random/200×300/?" +
+          tags[seed] +
+          "&" +
+          performance.now();
+      };
+    </script>
+
+    <section class="image-display">
+      <div class="origin">
+        <label>Original Image</label>
+        <img id="img" width="224px" crossorigin="anonymous" />
+        <input
+          id="img-input"
+          type="file"
+          accept="image/png, image/jpeg"
+          onchange="loadFile(event)"
+        />
+        <button onclick="randomImage(event)">random image</button>
+      </div>
+
+      <div id="origin-container">
+        <label>Original Canvas</label>
+      </div>
+
+      <div class="detected">
+        <label>Filtered Canvas</label>
+        <canvas id="canvas" width="224"></canvas>
+      </div>
+    </section>
+  </body>
+</html>
