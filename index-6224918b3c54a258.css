@@ -1,0 +1,32 @@
+body {
+  font-family: "Fira Code";
+  border-color: #474035;
+  background-color: #161a1b;
+  color: #a9a8a5;
+}
+
+.image-display {
+  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(0, min(100%/1, 280px))
+  );
+}
+
+label,
+img,
+canvas,
+input,
+button {
+  margin: 5px;
+  width: 260px;
+  white-space: nowrap;
+}
+
+textarea {
+  margin: 5px;
+  resize: vertical;
+  width: 260px;
+  height: 220px;
+}
