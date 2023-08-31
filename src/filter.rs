@@ -16,6 +16,10 @@ pub const PALETTE_HEX: [&str; 48] = [
     "56aec4", "92d7d9", "c3ebe3",
 ];
 
+pub const PALETTE_HEX_2: [&str; 8] = [
+    "0d2b45", "203c56", "544e68", "8d697a", "d08159", "ffaa5e", "ffd4a3", "ffecd6",
+];
+
 pub fn run_with_parameters(
     img: &ImageBuffer<Rgba<u8>, Vec<u8>>,
     threshold_map: &[[usize; 2]; 2],
@@ -81,58 +85,13 @@ pub fn run_with_parameters(
 pub fn run(
     img: &ImageBuffer<Rgba<u8>, Vec<u8>>,
 ) -> Result<ImageBuffer<Rgba<u8>, Vec<u8>>, ImageError> {
-    let pixels = img.enumerate_pixels();
-    let mut output_buffer = ImageBuffer::<Rgba<u8>, _>::new(img.width(), img.height());
-
-    let palette_oklab = palette_as_oklab(&PALETTE_HEX);
-    for pixel in pixels {
-        let (x, y) = (pixel.0, pixel.1);
-        let [r, g, b, a] = pixel.2 .0;
-
-        let alpha_f32 = (a as f32) / 255.0;
-        let pixel_rgb = Srgb::new(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0);
-        let pixel_oklab: Oklab = pixel_rgb.into_color();
-
-        // create a list of candidate color and alpha values
-        let mut candidates_c: Vec<Oklab> = vec![];
-        let mut candidates_a: Vec<f32> = vec![];
-        let mut error_c = Oklab::new(0.0, 0.0, 0.0);
-        let mut error_a = 0.0;
-        for _ in 0..MAP_SIZE.pow(2) {
-            // color
-            let sample_c = pixel_oklab + error_c * COLOR_DITHER;
-            let candidate_c = find_closest(&palette_oklab, sample_c);
-            candidates_c.push(candidate_c);
-            error_c += pixel_oklab - candidate_c;
-
-            // alpha
-            let sample_a = alpha_f32 + error_a * ALPHA_DITHER;
-            let candidate_a = sample_a.round();
-            candidates_a.push(candidate_a);
-            error_a += alpha_f32 - candidate_a;
-        }
-
-        // sort candidates by brightness and alpha, respectively
-        candidates_c
-            .sort_by(|Oklab { l: l1, .. }, Oklab { l: l2, .. }| l1.partial_cmp(l2).unwrap());
-        candidates_a.sort_by(|a1, a2| a1.partial_cmp(&a2).unwrap());
-
-        // choose a candidate based on the pixel coordinates
-        let index = THRESHOLD_MAP[x as usize % MAP_SIZE][y as usize % MAP_SIZE];
-        let chosen_color: Srgb = candidates_c[index].into_color();
-        let chosen_alpha = candidates_a[index];
-
-        // output the new color to the buffer
-        let output_pixel = output_buffer.get_pixel_mut(x, y);
-        *output_pixel = image::Rgba([
-            (chosen_color.red * 255.0) as u8,
-            (chosen_color.green * 255.0) as u8,
-            (chosen_color.blue * 255.0) as u8,
-            (chosen_alpha * 255.0) as u8,
-        ]);
-    }
-
-    Ok(output_buffer)
+    run_with_parameters(
+        img,
+        &THRESHOLD_MAP,
+        COLOR_DITHER,
+        ALPHA_DITHER,
+        &PALETTE_HEX,
+    )
 }
 
 fn palette_as_oklab(palette_hex: &[&str]) -> Vec<Oklab> {

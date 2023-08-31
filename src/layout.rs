@@ -79,18 +79,20 @@ impl Component for App {
                             .map(File::from)
                             .collect::<Vec<_>>();
 
-                        let link = ctx.link().clone();
-                        let file = files[0].clone();
-                        self.readers.insert(
-                            file.name(),
-                            read_as_bytes(&file.clone(), move |res| {
-                                link.send_message(Msg::Loaded(
-                                    file.name(),
-                                    file.raw_mime_type(),
-                                    res.expect("Failed to read file"),
-                                ))
-                            }),
-                        );
+                        if files.len() != 0 {
+                            let link = ctx.link().clone();
+                            let file = files[0].clone();
+                            self.readers.insert(
+                                file.name(),
+                                read_as_bytes(&file.clone(), move |res| {
+                                    link.send_message(Msg::Loaded(
+                                        file.name(),
+                                        file.raw_mime_type(),
+                                        res.expect("Failed to read file"),
+                                    ))
+                                }),
+                            );
+                        }
                     }
                     None => {}
                 }
@@ -179,12 +181,22 @@ impl Component for App {
             }
             Msg::OnEdit(id, value) => {
                 match id.as_str() {
-                    "color_dither" => {
-                        self.color_dither = value.parse().expect("Failed to parse");
-                    }
-                    "alpha_dither" => {
-                        self.alpha_dither = value.parse().expect("Failed to parse");
-                    }
+                    "color_dither" => match value.parse() {
+                        Ok(s) => self.color_dither = s,
+                        Err(_) => return false,
+                    },
+                    "alpha_dither" => match value.parse() {
+                        Ok(s) => self.alpha_dither = s,
+                        Err(_) => return false,
+                    },
+                    "threshold_map" => match serde_json::from_str(&value) {
+                        Ok(s) => self.threshold_map = s,
+                        Err(_) => return false,
+                    },
+                    "palette_hex" => match serde_json::from_str(&value) {
+                        Ok(s) => self.palette_hex = s,
+                        Err(_) => return false,
+                    },
                     _ => {}
                 }
                 true
@@ -196,7 +208,7 @@ impl Component for App {
         html! {
             <section class="image-display">
               <div class="origin">
-                <label>{"Original Image"}</label>
+                <h3>{"Original Image"}</h3>
                 <img id="img" width="224px" crossorigin="anonymous"
                   ref={self.image_element.clone()} />
                 <input
@@ -216,20 +228,31 @@ impl Component for App {
               </div>
 
               <div id="origin-container">
-                <label>{"Original Canvas"}</label>
+                <h3>{"Original Canvas"}</h3>
                 <canvas id="origin-canvas" width="224" ref={self.origin_canvas.clone()}></canvas>
                 <div>
                     <button onclick={ctx.link().callback(|_| Msg::Filter)}>{ "Filter" }</button>
                 </div>
               </div>
 
-              <div class="detected">
-                <label>{"Filtered Canvas"}</label>
+              <div class="filtered">
+                <h3>{"Filtered Canvas"}</h3>
                 <canvas id="canvas" width="224" ref={self.target_canvas.clone()}></canvas>
               </div>
 
-              <div>
-                <p>{ format!("Threshold Map: {:?}", &self.threshold_map) }</p>
+              <div class="parameters">
+                <h3>{"Parameters"}</h3>
+                <label for="threshold_map">{ "Threshold Map" }</label>
+                <input
+                    type="text"
+                    id="threshold_map"
+                    value={ format!("{:?}", &self.threshold_map) }
+                    onchange={ctx.link().callback(|e: Event| {
+                        let input: HtmlInputElement = e.target_unchecked_into();
+                        Msg::OnEdit(input.id(), input.value())
+                    })}
+                    />
+
                 <label for="color_dither">{ "Color Dither" }</label>
                 <input
                     type="range"
@@ -258,7 +281,16 @@ impl Component for App {
                     })}
                     />
 
-                <p>{ format!("Palette Hex: {:?}",&self.palette_hex) }</p>
+                <label for="palette_hex">{ "Palette Hex" }</label>
+                <textarea
+                    type="text"
+                    id="palette_hex"
+                    value={ format!("{:?}", &self.palette_hex) }
+                    onchange={ctx.link().callback(|e: Event| {
+                        let input: HtmlInputElement = e.target_unchecked_into();
+                        Msg::OnEdit(input.id(), input.value())
+                    })}
+                    />
               </div>
             </section>
         }
