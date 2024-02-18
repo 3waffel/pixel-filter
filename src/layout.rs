@@ -37,7 +37,6 @@ pub struct App {
     palette_hex: Vec<String>,
 
     image_element: NodeRef,
-    origin_canvas: NodeRef,
     target_canvas: NodeRef,
     readers: HashMap<String, FileReader>,
 }
@@ -99,6 +98,7 @@ impl Component for App {
                 true
             }
             Msg::Filter => {
+                let image_element = self.image_element.cast::<HtmlImageElement>().unwrap();
                 let target_canvas = self.target_canvas.cast::<HtmlCanvasElement>().unwrap();
                 let target_context = target_canvas
                     .get_context("2d")
@@ -107,28 +107,18 @@ impl Component for App {
                     .dyn_into::<CanvasRenderingContext2d>()
                     .unwrap();
 
-                let origin_canvas = self.origin_canvas.cast::<HtmlCanvasElement>().unwrap();
-                let origin_context = origin_canvas
-                    .get_context("2d")
-                    .unwrap()
-                    .unwrap()
-                    .dyn_into::<CanvasRenderingContext2d>()
-                    .unwrap();
-
-                let image_element = self.image_element.cast::<HtmlImageElement>().unwrap();
-
-                origin_canvas.set_width(image_element.natural_width());
-                origin_canvas.set_height(image_element.natural_height());
-                origin_context
+                target_canvas.set_width(image_element.natural_width());
+                target_canvas.set_height(image_element.natural_height());
+                target_context
                     .draw_image_with_html_image_element(&image_element, 0.0, 0.0)
                     .unwrap();
 
-                let data = origin_context
+                let data = target_context
                     .get_image_data(
                         0.0,
                         0.0,
-                        origin_canvas.width() as f64,
-                        origin_canvas.height() as f64,
+                        target_canvas.width() as f64,
+                        target_canvas.height() as f64,
                     )
                     .unwrap();
                 let raw_data = data.data().0;
@@ -168,14 +158,10 @@ impl Component for App {
             }
             Msg::Random => {
                 let image_element = self.image_element.cast::<HtmlImageElement>().unwrap();
-                let tags = vec![
-                    "burger", "car", "fish", "fruit", "horse", "house", "people", "steak", "tree",
-                    "wine",
-                ];
-                let seed = (random() * 10.).floor() as usize;
+                let seed = (random() * 50.).floor() as usize;
                 image_element.set_src(&format!(
-                    "https://source.unsplash.com/random/200×300/?{}&{}",
-                    tags[seed], seed
+                    "https://source.unsplash.com/random/100x100/?{}",
+                    seed
                 ));
                 true
             }
@@ -206,93 +192,89 @@ impl Component for App {
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         html! {
-            <section class="image-display">
-              <div class="origin">
-                <h3>{"Original Image"}</h3>
-                <img id="img" width="224px" crossorigin="anonymous"
-                  ref={self.image_element.clone()} />
-                <input
-                  id="img-input"
-                  type="file"
-                  accept="image/png, image/jpeg"
-                  onchange={ctx.link().callback(|e: Event| {
-                    let input: HtmlInputElement = e.target_unchecked_into();
-                    Msg::Files(input.files())
-                  })}
-                />
-                <div>
-                    <button onclick={ctx.link().callback(|_| {
-                        Msg::Random
-                    }) }>{ "Random Image" }</button>
+            <>
+                <h1>{"Pixel Filter"}</h1>
+                <section class="image-display">
+                <div class="origin">
+                    <h3>{"Original Image"}</h3>
+                    <img id="img" width="224px" crossorigin="anonymous"
+                    ref={self.image_element.clone()} />
+                    <input
+                    id="img-input"
+                    type="file"
+                    accept="image/png, image/jpeg"
+                    onchange={ctx.link().callback(|e: Event| {
+                        let input: HtmlInputElement = e.target_unchecked_into();
+                        Msg::Files(input.files())
+                    })}
+                    />
+                    <div>
+                        <button onclick={ctx.link().callback(|_| {
+                            Msg::Random
+                        }) }>{ "Random Image" }</button>
+                        <button onclick={ctx.link().callback(|_| Msg::Filter)}>{ "Filter" }</button>
+                    </div>
                 </div>
-              </div>
 
-              <div id="origin-container">
-                <h3>{"Original Canvas"}</h3>
-                <canvas id="origin-canvas" width="224" ref={self.origin_canvas.clone()}></canvas>
-                <div>
-                    <button onclick={ctx.link().callback(|_| Msg::Filter)}>{ "Filter" }</button>
+                <div class="filtered">
+                    <h3>{"Filtered Canvas"}</h3>
+                    <canvas id="canvas" width="224" ref={self.target_canvas.clone()}></canvas>
                 </div>
-              </div>
 
-              <div class="filtered">
-                <h3>{"Filtered Canvas"}</h3>
-                <canvas id="canvas" width="224" ref={self.target_canvas.clone()}></canvas>
-              </div>
+                <div class="parameters">
+                    <h3>{"Parameters"}</h3>
+                    <label for="threshold_map">{ "Threshold Map" }</label>
+                    <input
+                        type="text"
+                        id="threshold_map"
+                        value={ format!("{:?}", &self.threshold_map) }
+                        onchange={ctx.link().callback(|e: Event| {
+                            let input: HtmlInputElement = e.target_unchecked_into();
+                            Msg::OnEdit(input.id(), input.value())
+                        })}
+                        />
 
-              <div class="parameters">
-                <h3>{"Parameters"}</h3>
-                <label for="threshold_map">{ "Threshold Map" }</label>
-                <input
-                    type="text"
-                    id="threshold_map"
-                    value={ format!("{:?}", &self.threshold_map) }
-                    onchange={ctx.link().callback(|e: Event| {
-                        let input: HtmlInputElement = e.target_unchecked_into();
-                        Msg::OnEdit(input.id(), input.value())
-                    })}
-                    />
+                    <label for="color_dither">{ "Color Dither" }</label>
+                    <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="any"
+                        id="color_dither"
+                        value={ format!("{}", &self.color_dither) }
+                        onchange={ctx.link().callback(|e: Event| {
+                            let input: HtmlInputElement = e.target_unchecked_into();
+                            Msg::OnEdit(input.id(), input.value())
+                        })}
+                        />
 
-                <label for="color_dither">{ "Color Dither" }</label>
-                <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="any"
-                    id="color_dither"
-                    value={ format!("{}", &self.color_dither) }
-                    onchange={ctx.link().callback(|e: Event| {
-                        let input: HtmlInputElement = e.target_unchecked_into();
-                        Msg::OnEdit(input.id(), input.value())
-                    })}
-                    />
+                    <label for="alpha_dither">{ "Alpha Dither" }</label>
+                    <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="any"
+                        id="alpha_dither"
+                        value={ format!("{}", &self.alpha_dither) }
+                        onchange={ctx.link().callback(|e: Event| {
+                            let input: HtmlInputElement = e.target_unchecked_into();
+                            Msg::OnEdit(input.id(), input.value())
+                        })}
+                        />
 
-                <label for="alpha_dither">{ "Alpha Dither" }</label>
-                <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="any"
-                    id="alpha_dither"
-                    value={ format!("{}", &self.alpha_dither) }
-                    onchange={ctx.link().callback(|e: Event| {
-                        let input: HtmlInputElement = e.target_unchecked_into();
-                        Msg::OnEdit(input.id(), input.value())
-                    })}
-                    />
-
-                <label for="palette_hex">{ "Palette Hex" }</label>
-                <textarea
-                    type="text"
-                    id="palette_hex"
-                    value={ format!("{:?}", &self.palette_hex) }
-                    onchange={ctx.link().callback(|e: Event| {
-                        let input: HtmlInputElement = e.target_unchecked_into();
-                        Msg::OnEdit(input.id(), input.value())
-                    })}
-                    />
-              </div>
-            </section>
+                    <label for="palette_hex">{ "Palette Hex" }</label>
+                    <textarea
+                        type="text"
+                        id="palette_hex"
+                        value={ format!("{:?}", &self.palette_hex) }
+                        onchange={ctx.link().callback(|e: Event| {
+                            let input: HtmlInputElement = e.target_unchecked_into();
+                            Msg::OnEdit(input.id(), input.value())
+                        })}
+                        />
+                </div>
+                </section>
+            </>
         }
     }
 }
