@@ -3,13 +3,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pixel Filter</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/firacode/6.2.0/fira_code.min.css" integrity="sha512-MbysAYimH1hH2xYzkkMHB6MqxBqfP0megxsCLknbYqHVwXTCg9IqHbk+ZP/vnhO8UEW6PaXAkKe2vQ+SWACxxA==" crossorigin="anonymous" referrerpolicy="no-referrer">
-    <link rel="stylesheet" href="/pixel-filter/index-6224918b3c54a258.css">
+    <link rel="stylesheet" href="/pixel-filter/index-cffa4228382748be.css" integrity="sha384-Jkb5_ogOxGbLr02xqui1_TSTIsvj1_8eAfWQNQ8_k8rQ_9whsTYTeItGgdszuAJ7">
     <base href="/pixel-filter/">
   
-<link rel="preload" href="/pixel-filter/web-e36fffc11416f7b6_bg.wasm" as="fetch" type="application/wasm" crossorigin="">
-<link rel="modulepreload" href="/pixel-filter/web-e36fffc11416f7b6.js"></head>
+<link rel="preload" href="/pixel-filter/web-3affc6358b4df848_bg.wasm" as="fetch" type="application/wasm" crossorigin="anonymous" integrity="sha384-CTQjFrN6183dSQvudlURLZ-i9KHvMyuzw0Y9UPYnWv1y-EBgxB2zzR8HnPdz9W9P">
+<link rel="modulepreload" href="/pixel-filter/web-3affc6358b4df848.js" crossorigin="anonymous" integrity="sha384-mday9ZckjMzJmkq1cXUt-lYr8MD9VpIWtko_PKxlw1f8l9WtAuDRcFvGwFoU2mM7"></head>
   <body>
-    <script type="module">import init from '/pixel-filter/web-e36fffc11416f7b6.js';init('/pixel-filter/web-e36fffc11416f7b6_bg.wasm');</script>
+    
+<script type="module">
+import init, * as bindings from '/pixel-filter/web-3affc6358b4df848.js';
+init('/pixel-filter/web-3affc6358b4df848_bg.wasm');
+window.wasmBindings = bindings;
+
+</script>
   
 
 </body></html>

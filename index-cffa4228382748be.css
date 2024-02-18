@@ -8,10 +8,16 @@ body {
 .image-display {
   justify-content: center;
   display: grid;
-  grid-template-columns: repeat(
-    auto-fit,
-    minmax(0, min(100%/1, 280px))
-  );
+  grid-template-columns: repeat(auto-fit, minmax(0, min(100%/1, 280px)));
+}
+
+h1 {
+  text-align: center;
+}
+
+canvas,
+img {
+  image-rendering: pixelated;
 }
 
 label,
